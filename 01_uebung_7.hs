@@ -148,10 +148,14 @@ int :: Programm -> Zustand -> [Zustand]
 int [] z = []
 int (Skip:zws) z = z : int zws z
 int (Zw v expr:zws) z = z : int zws (updateZustand v (aaw expr z) z)
+--split into if/else block and rest (zws)
+-- if ala cond == true add thenBlock and rest of the program with state z
+-- otherwise add elseBlock and rest of the program with sate z
 int (If cond thenBlock elseBlock : zws) z
     | ala cond z = int (thenBlock++zws) z
     | otherwise = int (elseBlock++zws) z
 int (While cond thenBlock : zws) z
+    -- when condtion is true (enering the while loop) add thenbranch, and cocatinate with the "While cond thenBlock" prepened to the rest zws
     | ala cond z = take 100 ( int (thenBlock ++ While cond thenBlock : zws) z)
     | otherwise = int zws z
 
@@ -169,9 +173,11 @@ type Index = Nat0
     function: The function receives a program, which is a list of block expressions, the current state, and an index. Inspiziere will try to retrieve element at the specific index. If there is a result, then it will return the result as a Zustand. If it retrieves anything else other than a valid Zustand, it will return Nothing. 
 -}
 inspiziere :: Programm -> Anfangszustand -> Index -> Maybe Zustand
+-- if program startstate and index is empty, return nothing. !!What about when only one of these is empty!!
 inspiziere [] _ _ = Nothing
 inspiziere prog state0 i
     | i < 0 ||  i >= length result = Nothing
+    -- Just cast he value in a mayv´be context, get the value of list result at index i (while result is the interpreted program from int)
     | otherwise = Just (result !! i)
     where
         result = int prog state0
@@ -381,13 +387,13 @@ showIntResults z_list = helper z_list 0
     --------------------
     - getAllSolutions : 
         1. generates all base permutations
-        2. filters out invalid permutatiions
+        2. filters out invalid permutations
         3. builds the pyramid for each permutation, then 
         4. filiters out solutions that don't match the puzzle pattern
 
     newtypes: 
     - Layer: list of Integers. Each row in a pyramid
-    - Pyramid: the list of layers in a pyramid shape
+    - Pyramid: the list of layers in a pyramid shape (Highest layer is first object in pyramid)
     - Solutions: a list of all possible Pyramids that satisfy the puzzle
 
     Relevant functions:
@@ -443,49 +449,64 @@ newtype Solutions = So [Pyramid]
 
 -- allows Integer concatenation to build Layer
 concatLayers :: Layer -> Layer -> Layer
+-- concatination of the two layers (integerlists)
 concatLayers (L a) (L b) = L (a++b)
 
 -- allows Layer concatenation to build Pyramid 
 concatPyramid :: Pyramid -> Pyramid -> Pyramid
+-- concatination of the two pyramids (layerlist)
 concatPyramid (Py a) (Py b) = Py (a++b)
 
 -- get base = height of pyramid
 getPyramidBase :: Pyramid -> Int
+-- Basecase: Py is empty
 getPyramidBase (Py []) = 0
+--recursivly call getPyramidBase with the not lowest layer and add 1
 getPyramidBase (Py (layer:rest)) = 1 + getPyramidBase (Py rest)
 
 -- filters out elements that don't match the puzzle pattern for pyramid matching
+-- gets a computed solutions object and the given puzzle pyramid and provides a new solutions object only with pyramids which match to the pyramid 
 getValidSolutions :: Solutions -> Pyramid -> Solutions
+-- (So list) deconstructs the Solutions newtype, extracting the list of pyramids
+-- a is the given puzzle pyramid
+-- we construct a new Soutions object by calling isValidSolution for each element of the input pyramids list (list) and the given puzzle pyramid a, when it match put it into the new Solultions object
 getValidSolutions (So list) a = So [x | x <- list, isValidSolution x a]
 
 layerLength :: Layer -> Int
+-- (L l) deconstructs the Layer newtype, extracting the list of integer
 layerLength (L l) = length l
 
--- check that the list matches the puzzle pattern
+-- check that the list matches the puzzle pattern, so layer size increases always by one
 isValidPyramid :: Pyramid -> Bool
 isValidPyramid (Py []) = True
 isValidPyramid (Py pyr) = helper (Py pyr) 1
     where
         helper :: Pyramid -> Int -> Bool
+        --if only one layer, this should ne lenght 1
         helper (Py [p]) i = layerLength p == i
+        -- check if the atm highest layer matches with the current length i and recursifly check if the next layer matchs with i+1
         helper (Py (p:ps)) i = layerLength p == i && helper (Py ps) (i+1)
 
--- check that the list matches the puzzle pattern
+-- check that the list (pyramid) matches the puzzle pattern, so the numbers in the puzzels matchs
+-- gets two pyramids and returns if the pyramid
 isValidSolution :: Pyramid -> Pyramid -> Bool
 isValidSolution (Py []) (Py []) = True
 isValidSolution (Py (l:ls)) (Py (a:as))
+    -- if the the atm highest layer (l) is valid in terms of (a) recursifly call isValidSolution with the next layers
     | isValidLayer l a = isValidSolution (Py ls) (Py as)
     | otherwise = False
 
--- check that the list matches the puzzle pattern
+-- check that the list (layer) matches the puzzle pattern
 isValidLayer :: Layer -> Layer -> Bool
 isValidLayer (L []) (L []) = True
 isValidLayer (L (l:ls)) (L (a:as))
+    -- check if a is given by the puzzle (not zero) if yes compare and recursifly call for the rest of the layer
     | a /=0 = a==l && isValidLayer (L ls) (L as)
     | otherwise = isValidLayer (L ls) (L as)
 
+
 -- generate list of permutations of base
--- parameters: a list of Integers from [1..n] where n is the height of the pyramid
+-- parameters: a list of Integers from [1..n] where n is the width of the lowest layer of the pyramid
 basePerms :: Layer -> [Layer]
 basePerms (L []) = [L []]
 basePerms xs = [ L (z:zs) | L (z:ys) <- helper xs, L zs <- basePerms (L ys)]
@@ -535,6 +556,11 @@ getOneSolution puzzle
             a -> Just (a !! 0)
     where 
         height = getPyramidBase puzzle
+
+
+
+
+
 
 instance Show Layer where
     show (L lyr) = "| " ++ concatWithString " | " (map show lyr) ++ " |"
