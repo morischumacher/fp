@@ -198,12 +198,16 @@ type Bis = Index
         3. If Von to Bis is invalid, i.e. negative range, then it will return Nothing
 -}
 inspiziere' :: Programm -> Anfangszustand -> Von -> Bis -> Maybe [Zustand]
+-- call the helper with the interpreted program [Zustand], von, bis
 inspiziere' prog state0 von bis = helper (int prog state0) von bis
     where
         helper :: [Zustand] -> Von -> Bis ->  Maybe [Zustand]
         helper result von bis
             | von < 0 || bis < 0 || von >= length result || von > bis = Nothing
             | null result = Just result
+            --take n list: returns n first elements of the list
+            --drop n lsit: returns the list starting with element n+1
+            -- equivalent with Just (drop von (take bis result))
             | otherwise = Just $ drop von (take bis result)
 
 ----------
