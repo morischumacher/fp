@@ -206,7 +206,7 @@ inspiziere' prog state0 von bis = helper (int prog state0) von bis
             | von < 0 || bis < 0 || von >= length result || von > bis = Nothing
             | null result = Just result
             --take n list: returns n first elements of the list
-            --drop n lsit: returns the list starting with element n+1
+            --drop n lsit: returns the list starting with element n
             -- equivalent with Just (drop von (take bis result))
             | otherwise = Just $ drop von (take bis result)
 
@@ -217,56 +217,50 @@ inspiziere' prog state0 von bis = helper (int prog state0) von bis
     inspiziere2
     parameters: Programm, Anfangszustand, Index
     outputs: Maybe Zustand
-    function: The function does the same as inspiziere but will only return variables that have changed.
+    function: The function does the same as inspiziere but will only return variables which are significant.
 -}
 inspiziere2 :: Programm -> Anfangszustand -> Index -> String
 inspiziere2 [] _ _ = "No solutions"
 inspiziere2 prog state0 i
     | i < 0 ||  i >= length result = "Invalid Index"
+    --take the state i from state list we got from (int) and filter out the sigVariables
     | otherwise = showZustand sigVariables (result !! i)
     where
         result = int prog state0
-
---to be deleted
--- filterZust :: [Variable] -> Zustand -> Zustand
--- filterZust [] zus = zus
--- filterZust sig zus z = newZust
---     where
---         newZust :: Zustand
---         newZust var
---             | var == ls = toEnum . fromIntegral $ aw rs zust
---             | otherwise = zust var
-
--- updateZustand :: Variable -> Wert -> Zustand -> Zustand
--- updateZustand var val state v
---     | v == var = fromInteger val
---     | otherwise = state v
-
--- test :: [Variable] -> Programm -> Anfangszustand -> Index -> String
--- test _ [] _ _ = "No solutions"
 
 {-|
     inspiziere2'
     parameters: Programm, Anfangszustand, Von, Bis
     outputs: Maybe [Zustand]
-    function: The function receives a program, which is a list of block expressions, the current state, a start index, and an end index. Inspiziere' will retrieve a sublist of Zustands from Von to Bis inidices. Some cases:
+    function: The function receives a program, which is a list of block expressions, the current state, a start index, and an end index. Inspiziere' will retrieve a sublist of Zustands from Von to Bis inidices and only the significant variables of these. Some cases:
         1. If Von or Bis is outside the range of indices, then it will return Nothing
         2. If Programm is empty, it will return empty list
         3. If Von to Bis is invalid, i.e. negative range, then it will return Nothing
 -}
 inspiziere2' :: Programm -> Anfangszustand -> Von -> Bis -> String
 inspiziere2' prog state0 von bis = do
+    -- call helper with zustand list from (int), von bis
     let  z_list = case helper (int prog state0) von bis of
+                    -- cast the result of helper in a when its just a, otherwise (mainly nothing) an empty list
                     Just a -> a
                     otherwise -> []
     if not (null z_list)
+        -- concatMap: function in Haskell that applies a function to each element of a list and concatenates the results.
+        -- (\v -> showZustand sigVariables v): apply for each element v (showZustand sigVariables v), result is a list of strings
+        -- concatMap concartinates the list of strings to one list -> z_list
         then concatMap (\v -> showZustand sigVariables v) z_list
         else ""
     where
+        -- call with zustand list of (int)
         helper :: [Zustand] -> Von -> Bis ->  Maybe [Zustand]
         helper result von bis
+            -- if index out of bound give nothing
             | von < 0 || bis < 0 || von >= length result || von > bis = Nothing
+            -- if given result list is empty (null) give just object of empty list
             | null result = Just result
+            --take n list: returns n first elements of the list
+            --drop n lsit: returns the list starting with element n
+            -- equivalent with Just (drop von (take bis result))
             | otherwise = Just $ drop von (take bis result)
 
 ----------
@@ -276,7 +270,7 @@ inspiziere2' prog state0 von bis = do
     inspiziere3
     parameters: Programm, Anfangszustand, Index
     outputs: Maybe Zustand
-    function: The function does the same as inspiziere but will only return variables that have changed.
+    function: The function does the same as inspiziere3 (significant variables from the state i) but will show the significant variables from the first state as well.
 -}
 inspiziere3 :: Programm -> Anfangszustand -> Index -> String
 inspiziere3 [] _ _ = "No solutions"
@@ -292,13 +286,14 @@ inspiziere3 prog state0 i
     inspiziere3'
     parameters: Programm, Anfangszustand, Von, Bis
     outputs: Maybe [Zustand]
-    function: The function receives a program, which is a list of block expressions, the current state, a start index, and an end index. Inspiziere' will retrieve a sublist of Zustands from Von to Bis inidices. Some cases:
+    function: The function receives a program, which is a list of block expressions, the current state, a start index, and an end index. Inspiziere3' will retrieve the sigVariables of start state von, as well as the sigVariables of end state bis. Some cases:
         1. If Von or Bis is outside the range of indices, then it will return Nothing
         2. If Programm is empty, it will return empty list
         3. If Von to Bis is invalid, i.e. negative range, then it will return Nothing
 -}
 inspiziere3' :: Programm -> Anfangszustand -> Von -> Bis -> String
 inspiziere3' prog state0 von bis = do
+    -- we generale state list z_list by calling ghe helper function with the (int) states list
     let  z_list = case helper (int prog state0) von bis of
                     Just a -> a
                     otherwise -> []
@@ -313,6 +308,9 @@ inspiziere3' prog state0 von bis = do
         helper result von bis
             | von < 0 || bis < 0 || von >= length result || von > bis = Nothing
             | null result = Just result
+            -- take n list: returns n first elements of the list
+            -- drop n lsit: returns the list starting with element n
+            -- equivalent with Just (drop von (take bis result))
             | otherwise = Just $ drop von (take bis result)
 
 ----------
@@ -509,6 +507,61 @@ isValidLayer (L (l:ls)) (L (a:as))
     | otherwise = isValidLayer (L ls) (L as)
 
 
+
+
+## Explanation 
+Think of it in 2 parts:
+1. basePerms
+2. helper
+
+### helper:
+
+We'll start with helper because it's the trivial case
+  - "How can i start the list with each number in the list?"
+If I have a list with 0 element, this gives [].
+If I have a list with 1 element, this gives [x].
+If I have a list with 2 elements [0,1], this gives [[0,1],[1,0]].
+If I have a list with 3 elements [1,2,3], this gives [1,2,3], [2,1,3], [3,1,2], basically taking each element to the front and pushing the other elements down.
+
+A breakdown of that:
+In our OUTPUT = []
+Level [1,2,3]
+    - will give us OUTPUT = [[1,2,3], pending] and then recurse on [2,3]
+    Level [2,3]
+        - will give us OUTPUT = [[2,3], pending] and then recurse on [3]
+        Level [3]
+        - will give us OUTPUT = [[3],[]]
+    - so now we go back up to Level [2,3] where [y:x:ys | (y:ys) <- helper xs] = [[3]], we can form the rest of the list.
+
+        first element is [2,3], x = 2 and xs = [3]
+        second element is [3,2], x = 2 and y = 3 and ys = []
+
+- so now we go back up to LEvel [1,2,3] where [y:x:ys | (y:ys) <- helper xs] = [[2,3],[3,2]], we can form the rest of the list.
+
+    first element is [1,2,3], x = 1 and xs = [2,3]
+    second element is [2,1,3], x = 1 and y = 2 and ys = 3 //wrong
+    third element is [3,1,2], x = 1 and y = 3 and ys = 2
+
+With the 3 element case, I can generalize 
+
+### basePerms:
+- takes the first element and splits it into the head and the rest. it permutes the rest, then after getting a list of all the permutations of the rest of the body, it appends each one to the head
+
+For example:
+
+xs = [1,2,3] 
+helper xs = [1,2,3], [2,1,3], [3,1,2]
+
+Let's only look at [1,2,3] now
+(z:ys) <- helper xs splits it into (1:[2,3])
+[2,3] gets passed back into basePerms and will return RESULT = [[2,3], [3,2]]
+then z:zs appends 1 to the head of each item in RESULT
+
+.. und so weit for  [2,1,3], [3,1,2].
+
+
+
+
 -- generate list of permutations of base
 -- parameters: a list of Integers from [1..n] where n is the width of the lowest layer of the pyramid
 basePerms :: Layer -> [Layer]
@@ -519,16 +572,22 @@ basePerms xs = [ L (z:zs) | L (z:ys) <- helper xs, L zs <- basePerms (L ys)]
         helper (L []) = []
         helper (L (x:xs)) = L (x:xs) : [L (y:x:ys) | L (y:ys) <- helper (L xs)]
 
+
+
+        
+
 -- calculate solution from each permutation
 -- parameters: a permutation (one list)
 -- returns: solution (list of lists of integers)
 calculatePyramid :: Layer -> Pyramid
 calculatePyramid (L []) = Py []
+-- concatinate the actual layer ((Py [L list])) and the recursifly next layers (getNextLayer (L list))
 calculatePyramid (L list) = concatPyramid (calculatePyramid (getNextLayer (L list))) (Py [L list])
     where
         getNextLayer :: Layer -> Layer
         getNextLayer (L []) = L []
         getNextLayer (L [x]) = L []
+        -- concat l0+l1 and recursilfy l1 with ls
         getNextLayer (L (l0:l1:ls)) = concatLayers (L [l0+l1]) (getNextLayer (L (l1:ls)))
 
 {-| 
