@@ -147,6 +147,7 @@ updateZustand var val state v
 int :: Programm -> Zustand -> [Zustand]
 int [] z = []
 int (Skip:zws) z = z : int zws z
+-- if it matches with Zw variable expr:rest of list, zustand, then recusufly call int with the rest and the new zustand which is: update zustand with variable v, computed expr in zustamd z throught fúnction aaw, and zustand z. 
 int (Zw v expr:zws) z = z : int zws (updateZustand v (aaw expr z) z)
 --split into if/else block and rest (zws)
 -- if ala cond == true add thenBlock and rest of the program with state z
