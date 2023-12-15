@@ -10,10 +10,12 @@ import Data.Char (toUpper)
 -- A.1
 ------------------------------------------------------
 -- copied from problem statement
+-- takes is_simple_enough solve divide combine problemInstance
 div_and_conquer :: (p -> Bool) -> (p -> s) -> (p -> [p]) -> (p -> [s] -> s) -> p -> s
 div_and_conquer is_simple_enough solve divide combine problemInstance = dac problemInstance
     where dac pbi
             | is_simple_enough pbi = solve pbi
+            -- recurlsivly call dac with the devided pbi. For each (map) resulting pbi combine to get the new pbi
             | True = combine pbi (map dac (divide pbi))
 
 -- a)
@@ -152,6 +154,8 @@ a2_combine (NumNode _ i _) min_list = minimum' (i : min_list)
     function: generates fibonacci sequence beginning with 0
 -}
 generiere_fib_strom :: [Integer]
+-- zipWith (+) function takes two lists and applies the addition function pairwise to their corresponding elements.
+-- tail generiere_fib_strom returns all values expect the first 
 generiere_fib_strom = 0 : 1 : zipWith (+) generiere_fib_strom (tail generiere_fib_strom)
 
 ------------------------------------------------------
