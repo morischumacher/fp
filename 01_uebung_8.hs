@@ -39,6 +39,7 @@ m_solve :: Ord a => [a] -> a
 m_solve [x] = x
 
 -- split list into halves
+-- if list sice is even, the first new list has one element less
 m_divide :: [a] -> [[a]]
 m_divide lst = [take midIndex lst, drop midIndex lst]
     where
