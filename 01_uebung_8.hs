@@ -219,10 +219,19 @@ generiere_woerter = "": concatMap (getCombos "abc") [1..]
     outputs: [String], can be infinite or finite
     function: turns a string into a list if characters, then recursively 
     cross concatenates with itself. Is also a helper function for A.7
+    example: chars = "abc" and i = 3
+    getCombos "abc" 3 -> getCombos "abc" 2 -> getCombos "abc" 1 -> getCombos "abc" 1 returns ["a", "b", "c"].
+    Back to getCombos "abc" 2: For each element in ["a", "b", "c"], it concatenates with each element of getCombos "abc" 1. Result: ["aa", "ab", "ac", "ba", "bb", "bc", "ca", "cb", "cc"].
+    getCombos "abc" 3 (overall): For each element in ["a", "b", "c"] of getCombos "abc" 2.
+    Result: ["aaa", "aab", "aac", "aba", "abb", "abc", "aca", "acb", "acc", "baa", "bab", "bac", "bba", "bbb", "bbc", "bca", "bcb", "bcc", "caa", "cab", "cac", "cba", "cbb", "cbc", "cca", "ccb", "ccc"].
+
 -}
+
 getCombos :: [Char] -> Int -> [String]
 getCombos chars i
+    -- if current index lenght is 1, return [[a][b][c]]
     | i == 1 = map (:[]) chars
+    -- combines always the basecase with the case (i-1)
     | otherwise = concatMap (\front -> map (front ++) (getCombos chars 1))
                                 (getCombos chars (i - 1))
 
