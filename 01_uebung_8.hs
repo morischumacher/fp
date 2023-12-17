@@ -229,7 +229,7 @@ generiere_woerter = "": concatMap (getCombos "abc") [1..]
 
 getCombos :: [Char] -> Int -> [String]
 getCombos chars i
-    -- if current index lenght is 1, return [[a][b][c]]
+    -- if current index lenght is 1, return each char from chars as string f.i. [[a][b][c]]
     | i == 1 = map (:[]) chars
     -- combines always the basecase with the case (i-1)
     | otherwise = concatMap (\front -> map (front ++) (getCombos chars 1))
@@ -245,7 +245,8 @@ getCombos chars i
 
 -}
 filtere_prim_a :: Woerterstrom -> Woerterstrom
-filtere_prim_a stream = filter primeOccurrence_a stream
+-- filters out the elements of stream which length (primeFactors (count_a str) ) == 1
+filtere_prim_a stream = filter primeOccurrence_a stream 
     where
         -- returns true if the number of prime factors of the number of a's
         -- only contains itself
@@ -265,6 +266,7 @@ count_a (s:ss)
     | otherwise = count_a ss
 
 -- from ubung2
+-- computes all prime factores of an integer
 primeFactors :: Integer -> [Integer]
 primeFactors k
   | k <= 1 = []
@@ -298,7 +300,9 @@ filtere_palindrome stream = filter isPalindrome stream
 -}
 isPalindrome :: String -> Bool
 isPalindrome str
+    -- if lenght (l) is <= 1
     | l <= 1 = True
+    -- when last and first element are the same, recursifly call without last and first
     | head str == str !! (l-1) = isPalindrome $ drop 1 (take (l-1) str)
     | otherwise = False
     where l = length str
@@ -311,6 +315,7 @@ isPalindrome str
     function: Function transforms all the characters in a stream to uppercase
 -}
 transf :: Woerterstrom -> Woerterstrom
+-- for each element of stream call toUpperString
 transf stream = map toUpperString stream
 
 {-|
@@ -320,6 +325,7 @@ transf stream = map toUpperString stream
     function: turns all letters in a string to uppercase
 -}
 toUpperString :: String -> String
+-- for each char in string, call toUpper
 toUpperString = map toUpper
 
 ------------------------------------------------------
@@ -334,7 +340,9 @@ toUpperString = map toUpper
         transforms the string toUppercase
 -}
 wort_gen :: Woerterstrom
+-- uppercase strom (transf) only with palindroms (filtere_palindrome) of alpha_combos
 wort_gen = transf $ filtere_palindrome alpha_combos
+    -- concatinate empty string with all combos (getCombos) from a to z and every lenght
     where alpha_combos = "": concatMap (getCombos ['a'..'z']) [1..]
 
 ------------------------------------------------------
@@ -454,35 +462,51 @@ createLayouts grid vws = helper (openPositions grid) grid
     where
         helper :: [Position] -> TreeGrid -> Layouts
         helper [] grid = [grid]
+        -- computes the logic firstly for the first postion
         helper (pos:rest) grid =
+            -- compute a list of all Trees which exists in the given grid size
             let allTrees = map (*10) [1..length grid]
+                -- for all Trees m from allTrees, is the position valid in the grid? (isValidPosition (toInteger m) pos grid). If yes add Tree to potentialTrees
+                -- potentialTrees now includes all trees which can be set at the given position
                 potentialTrees = [toInteger m | m <- allTrees, isValidPosition (toInteger m) pos grid]
+                -- for all potential trees in potentialTrees, make a new grid with this tree m at the given position and and grid, by updating the tree at the given position in the old grid
+                -- make a list out of the updated grids (potentialLayouts)
                 potentialLayouts = map (\m -> gridWithPotentialTree m pos grid) potentialTrees
             in
+                -- recursifly call the helper with the rest of the open postions, for each grid in potentialLayouts and concatinate at the end
                 concatMap (helper rest) potentialLayouts
 
 {-|
     doViewsWork
     parameters: ViewPlan, TreeGrid
     outputs: Bool
-    function: checks if the particular view matches the row/column in the TreeGrid
+    function: checks if the particular view matches the row/column in the TreeGrid. In other words for all view elements in viewPlan left/right/bottom/top, it checks, if looked from there, the right number of XTrees are visible
 -}
 doViewsWork :: ViewPlan -> TreeGrid -> Bool
+-- devide the viewPlan into top-, bottom-, right-, left-viewPlan
 doViewsWork (top:bottom:right:left) grid =
+    -- all four plans has to be valid
     topViewWorks && bottomViewWorks && rightViewWorks && leftViewWorks
     where
         topViewWorks =
+            -- (1)for each row in (r) in the grid (grid) (r <- grid), take element form row r at index i (r !! i), and parse it into new list [r !! i | r <- grid]
+            -- (2)for all lists generated from (1) at the index i, count the Trees which are visible from this position (countNumTrees (1))
+            -- (3)expression holds, if counted number from (2) is the same provided in topviewPlan for every element,
             all (\i -> countNumTrees [r !! i | r <- grid] == top !! i)
                 [0..length top -1]
         bottomViewWorks =
+            -- does the same like the one above, just has to reverse the derivated computed row since we look from the bottom (reverse [r !! i | r <- grid])
             all (\i -> countNumTrees (reverse [r !! i | r <- grid]) == (bottom !! i))
                 [0..length bottom -1]
+        leftViewWorks =
+            -- does the same like the first, but we can now eaily take the first element (list of XTrees) from the grid
+            all (\i -> countNumTrees (grid !! i) == head left !! i )
+                [0..length left -1]
         rightViewWorks =
+            -- does the same like the third, just has to reverse the first element (list of XTrees) from the grid since we look from the right
             all (\i -> countNumTrees (reverse (grid !! i)) == right !! i)
                 [0..length right -1]
-        leftViewWorks =
-            all (\i -> countNumTrees (grid !! i) == head left !! i)
-                [0..length left -1]
+                
 
 {-|
     countNumTrees
@@ -496,6 +520,7 @@ countNumTrees lst = helper lst 0
         helper :: [Integer] -> Integer -> Integer
         helper [] _ = 0
         helper (l:ls) prev
+            -- if next tree is higher then provious, add 1 and recursifly call with the rest
             | l > prev = 1 + helper ls l
             | otherwise = helper ls prev
 
@@ -507,8 +532,10 @@ countNumTrees lst = helper lst 0
     Position in the TreeGrid based on whether or not it already exists in that same row/col
 -}
 isValidPosition :: XmasTree -> Position -> TreeGrid -> Bool
+-- checks if its possible to position a tree at a given position, by checking if the tree (Int) is not an element ('notElem') in the list given from the where statement 
 isValidPosition tree (i,j) grid = tree `notElem` sameRowAndCol
     where
+        -- returns the whole row and the whole column provied from the position in one list
         sameRowAndCol = (grid !! i) ++[row !! j | row <- grid]
 
 {-|
@@ -518,6 +545,7 @@ isValidPosition tree (i,j) grid = tree `notElem` sameRowAndCol
     function: returns a list of positions that have 0
 -}
 openPositions :: TreeGrid -> [Position]
+-- checks for all 2D postitions in the grid if there is 0, and returns a list with all these postions
 openPositions grid = [(i, j) | i<- indices, j <- indices, grid !! i !! j == 0]
     where indices = [0..(length grid-1)]
 
@@ -528,11 +556,16 @@ openPositions grid = [(i, j) | i<- indices, j <- indices, grid !! i !! j == 0]
     function: makes a new TreeGrid with the Position occupied by XmasTree
 -}
 gridWithPotentialTree :: XmasTree -> Position -> TreeGrid -> TreeGrid
+-- returns the concatination of the not effected row before the tobeupdated one, the tobeupdated, and the one after
 gridWithPotentialTree tree (i, j) grid = prevRows ++ [updatedRow] ++ rest
     where
+        -- the previous rows which are not effected (0...i-1)
         prevRows = take i grid
+        -- the row in which we update something
         currRow = grid !! i
+        -- uodated the tree
         updatedRow = take j currRow ++ [tree] ++ drop (j + 1) currRow
+        .. drop the first i+1 rows
         rest = drop (i + 1) grid
 
 {-|
@@ -611,6 +644,10 @@ solveXmasTreeProblem grid views= if isValidGrid grid && isValidView (length grid
     then solved
     else error "Something wrong"
     where
+        -- compute all possible grids, possible in terms if numbers are valid (createLayouts grid views)
+        -- filter for these for which the view works (you only see as much trees ans provied in the view)
+        -- get one element of the gridList(Layouts) (getOneLayout)
+        -- print the solution
         solved = outputSolution $ getOneLayout $ filter (doViewsWork views) (createLayouts grid views)
 
 ------------------------------------------------------
