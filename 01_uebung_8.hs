@@ -130,19 +130,25 @@ minTree :: NumTree Int -> Int
 minTree = div_and_conquer a2_is_simple_enough a2_solve a2_divide a2_combine
 
 a2_is_simple_enough :: NumTree Int -> Bool
+-- if tree is empty 
 a2_is_simple_enough Empty = True
+-- if tree has only one element
 a2_is_simple_enough (NumNode Empty _ Empty) = True
 a2_is_simple_enough (NumNode {}) = False
 
 a2_solve :: NumTree Int -> Int
+-- return bigNum (recognize that its empty)
 a2_solve Empty = bigNum
+-- return the one node
 a2_solve (NumNode _ i _) = i
 
 a2_divide :: NumTree Int -> [NumTree Int]
+-- divide in the left tree and the right tree
 a2_divide (NumNode left _ right)= [left, right]
 
 
 a2_combine :: NumTree Int -> [Int] -> Int
+-- combintion is the minimum from i and the min of the min list
 a2_combine (NumNode _ i _) min_list = minimum' (i : min_list)
 
 ------------------------------------------------------
