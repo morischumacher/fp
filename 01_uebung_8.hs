@@ -70,7 +70,8 @@ o_solve [] = 0
 o_solve [x] = if odd x then x else 0
 
 -- split list into halves
-o_divide :: [a] -> [[a]]
+o_divide :: [a] -> [[a]
+-- split in to, when lenght is odd first half has one element less
 o_divide lst = [take midIndex lst, drop midIndex lst]
     where
         midIndex = length lst `div` 2
@@ -80,6 +81,7 @@ o_combine :: Integral a => [a] -> [a] -> a
 o_combine _ [x,y] = x+y
 
 -- c)
+-- ether nil, two nodes which are trees and a, derivated from Eq (== comparison possbile)
 data Tree a = Nil | Node (Tree a) a (Tree a) deriving Eq
 
 {-|
@@ -176,12 +178,18 @@ generiere_fib_strom = 0 : 1 : zipWith (+) generiere_fib_strom (tail generiere_fi
 ------------------------------------------------------
 {-|
     approximiere_exp
-    parameters: Int
+    parameters: Double Int
     outputs: Double
-    function: calculates the approximate exp function
+    function: calculates the approximate exp function as long as the to be addes term is bigger then epsilon 
 -}
-approximiere_exp :: Int -> Double
-approximiere_exp x = sum $ take x (zipWith (/) squared factorial)
+
+
+approximiere_exp :: Double -> Int -> Double
+approximiere_exp epsilon x 
+    | epsilon <= 0 = error "epsilon must be strictly greater than 0"
+    | otherwise = sum $ takeWhile (\term -> term > epsilon) (zipWith (/) squared factorial)
+
+
 
 {-|
     squared
@@ -254,8 +262,7 @@ filtere_prim_a :: Woerterstrom -> Woerterstrom
 -- filters out the elements of stream which length (primeFactors (count_a str) ) == 1
 filtere_prim_a stream = filter primeOccurrence_a stream 
     where
-        -- returns true if the number of prime factors of the number of a's
-        -- only contains itself
+        -- returns true if the number of prime factors of the number of a's only contains itself
         primeOccurrence_a :: String -> Bool
         primeOccurrence_a str = length (primeFactors (count_a str) ) == 1
 
